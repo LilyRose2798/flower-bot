@@ -10,13 +10,13 @@ let state = fs.existsSync("state.json") ? JSON.parse(fs.readFileSync("state.json
 
 const randomArrayIndex = n => Math.floor(Math.random() * n.length)
 
-const createEmbed = () => {
-    const flower = flowers[state.flowerIndex]
+const createEmbed = ({flowerIndex, imageIndex, colorIndex} = state, author = "Flower of the Day") => {
+    const flower = flowers[flowerIndex]
     const flowerName = flower.flowerName
-    const color = colors[state.colorIndex]
-    const imageUrl = flower.images[state.imageIndex]
+    const imageUrl = flower.images[imageIndex]
+    const color = colors[colorIndex]
     const description = `**Kingdom:** ${flower.kingdom}\n**Phylum:** ${flower.phylum}\n**Class:** ${flower.class}\n**Order:** ${flower.order}\n**Family:** ${flower.family}\n**Genus:** ${flower.genus}\n\n**Lifespan:** ${flower.lifespans.join("/")}\n`
-    return new Discord.MessageEmbed().setTitle(flowerName).setAuthor("Flower of the Day").setColor(color).setImage(imageUrl).setDescription(description)
+    return new Discord.MessageEmbed().setTitle(flowerName).setAuthor(author).setImage(imageUrl).setColor(color).setDescription(description)
 }
 
 let curEmbed = createEmbed()
@@ -38,8 +38,18 @@ client.once("ready", () => {
 })
 
 client.on("message", msg => {
-    if (msg.content === "!fotd")
-        msg.channel.send(curEmbed)
+    if (/^!fotd\s*$/.test(msg.content)) return msg.channel.send(curEmbed)
+    const flowerMatch = msg.content.match(/^!flower(?:\s+(.+?)?)?\s*$/)
+    if (!flowerMatch) return
+    if (!flowerMatch[1]) return msg.channel.send(curEmbed)
+    const flowerName = flowerMatch[1].toLowerCase()
+    const flowerIndex = flowers.findIndex(x => x.flowerName.toLowerCase() === flowerName)
+    if (flowerIndex === -1) return msg.channel.send(`Unable to find flower with the name ${flowerMatch[1]}.`)
+    return msg.channel.send(createEmbed({
+        flowerIndex: flowerIndex,
+        imageIndex: randomArrayIndex(flowers[flowerIndex].images),
+        colorIndex: randomArrayIndex(colors)
+    }, "Flower Lookup"))
 })
 
 client.login(process.env.DISCORD_TOKEN)
