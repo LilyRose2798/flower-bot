@@ -26,13 +26,19 @@ const refreshFlower = async () => {
     state.imageIndex = randomArrayIndex(flowers[state.flowerIndex].images)
     state.colorIndex = randomArrayIndex(colors)
     curEmbed = createEmbed()
-    client.guilds.cache.forEach(g => g.channels.cache.find(c =>
-        /flower[-_]?of[-_]?the[-_]?day|fotd/i.test(c.name))?.send(curEmbed))
+    const fotdChannels = client.guilds.cache.map(g => g.channels.cache.find(c =>
+        /flower[-_]?of[-_]?the[-_]?day|fotd/i.test(c.name))).filter(c => c)
+    fotdChannels.forEach(c => c.send(curEmbed))
+    console.log(`Sent FOTD to ${fotdChannels.length} channels`)
     fs.writeFileSync("state.json", JSON.stringify(state, null, 4))
 }
 
 client.once("ready", () => {
     console.log(`Logged in as ${client.user.tag}`)
+    console.log(`Bot is in ${client.guilds.cache.size} guilds total and ${
+        client.guilds.cache.map(g => g.channels.cache.find(c =>
+            /flower[-_]?of[-_]?the[-_]?day|fotd/i.test(c.name))).filter(c => c).length
+        } guilds containing a FOTD channel`)
     new CronJob("00 00 20 * * *", refreshFlower).start()
     // refreshFlower()
 })
